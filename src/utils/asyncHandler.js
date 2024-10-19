@@ -1,8 +1,12 @@
-const asyncHandler = async (requestHandler) => {
-  (req, res, next) => {
-    // this is a middlewear and it contains the resposne of resolve or catch and return that to request handler
-    Promise.resolve(requestHandler(req, res, next)) // it performs the route operation and send the response to resolve or catch.
-      .catch((err) => next(err));
+const asyncHandler = (requestHandler) => {
+  return async (req, res, next) => {
+    try {
+      // Await the request handler execution directly
+      await requestHandler(req, res, next);
+    } catch (error) {
+      // Pass any errors to the next middleware (i.e., Express error handler)
+      next(error);
+    }
   };
 };
 
