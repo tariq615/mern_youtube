@@ -3,7 +3,13 @@ import {
   registerUser,
   loginUser,
   logoutUser,
-  refreshAccessToken
+  refreshAccessToken,
+  changeCurrentPassword,
+  getCurrentUser,
+  updateAccountDetails,
+  updateUserAvatar,
+  updateUserCoverImage,
+  getChannelUserprofile
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -30,5 +36,17 @@ router.route("/login").post(loginUser);
 router.route("/logout").post(verifyJWT, logoutUser);
 
 router.route("/refresh-token").post(refreshAccessToken);
+
+router.route("/change-password").post(verifyJWT, changeCurrentPassword)
+
+router.route("/getuser").post(verifyJWT, getCurrentUser)
+
+router.route("/edit/details").post(verifyJWT, updateAccountDetails)
+
+router.route("/edit/avatar").post(upload.single('avatar'), verifyJWT, updateUserAvatar)
+
+router.route("/edit/coverimage").post(upload.single('coverimage'), verifyJWT, updateUserCoverImage)
+
+router.route("/:username").post(verifyJWT, getChannelUserprofile)
 
 export default router;

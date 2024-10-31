@@ -4,8 +4,7 @@ import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
-import {deleteFromCloudinary} from "../utils/deleteCloudinary.js"
-
+import { deleteFromCloudinary } from "../utils/deleteCloudinary.js";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -81,7 +80,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const avatar = await uploadOnCloudinary(avatarLocalpath);
   const coverimage = await uploadOnCloudinary(coverimageLocalPath);
 
-  console.log(avatar);
+  // console.log(avatar);
 
   if (!avatar) {
     throw new ApiError(400, "Avatar file is Required");
@@ -293,7 +292,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(400, "avatar file is required");
   }
 
-  const userBeforeUpdate = await User.findById(req.user?._id)
+  const userBeforeUpdate = await User.findById(req.user?._id);
 
   if (!userBeforeUpdate) {
     throw new ApiError(404, "User not found");
@@ -315,7 +314,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     }
   ).select("-password -refreshToken");
 
-  await deleteFromCloudinary(userBeforeUpdate.avatar)
+  await deleteFromCloudinary(userBeforeUpdate.avatar);
 
   return res
     .status(200)
@@ -324,12 +323,12 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
   const coverImageLocalpath = req.file?.path;
-  
+
   if (!coverImageLocalpath) {
     throw new ApiError(400, "cover image file is required");
   }
 
-  const userBeforeUpdate = await User.findById(req.user?._id)
+  const userBeforeUpdate = await User.findById(req.user?._id);
 
   if (!userBeforeUpdate) {
     throw new ApiError(404, "User not found");
@@ -351,8 +350,8 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     }
   ).select("-password -refreshToken");
 
-   // Delete the old cover image from Cloudinary, if it exists
-   if (userBeforeUpdate.coverimage) {
+  // Delete the old cover image from Cloudinary, if it exists
+  if (userBeforeUpdate.coverimage) {
     await deleteFromCloudinary(userBeforeUpdate.coverimage);
   }
 
@@ -360,6 +359,79 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, { user }, "coverimage updated successfully"));
 });
+
+const getChannelUserprofile = asyncHandler(async (req, res) => {
+  const { username } = req.params;
+
+  if (!username?.trim()) {
+    throw new ApiError(404, "username is required");
+  }
+
+  const channel = await User.aggregate([
+    {
+      $match: {
+        username: username?.toLowerCase(),
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptons",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptons",
+        localField: "_id",
+        foreignField: "subcriber",
+        as: "subscribedTo",
+      },
+    },
+    {
+      $addFields: {
+        countSubcriber: {
+          $size: "$subscribers",
+        },
+        countSubscribedTo: {
+          $size: "$subscribedTo",
+        },
+        isSubscribed: {
+          $cond: {
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        fullName: 1,
+        username: 1,
+        countSubcriber: 1,
+        countSubscribedTo: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverimage: 1,
+        email: 1,
+      },
+    },
+  ]);
+
+  if (!channel?.length) {
+    throw new ApiError(404, "channel does not exist");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, { channel }, "user channel fetched successfully")
+    );
+});
+
+
 export {
   registerUser,
   loginUser,
@@ -369,5 +441,6 @@ export {
   getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
-  updateUserCoverImage
+  updateUserCoverImage,
+  getChannelUserprofile
 };
