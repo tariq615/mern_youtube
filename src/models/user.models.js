@@ -61,7 +61,7 @@ UserSchema.pre("save", async function (next) {
 
 UserSchema.methods.isPasswordCorrect = async function (password) {
   //adding method by using 'methods', creating method for checking password
-  return await bcrypt.compare(password, this.password); // first password fom user field, second from database
+  return await bcrypt.compare(password, this.password); // first password from user field, second from database
 };
 
 UserSchema.methods.generateAccessToken = function () {

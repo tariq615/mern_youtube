@@ -5,6 +5,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import { deleteFromCloudinary } from "../utils/deleteCloudinary.js";
+import { mongoose, Schema } from "mongoose";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -243,7 +244,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 
   const user = await User.findById(req.user?._id);
 
-  const isPasswordCorrect = user.isPasswordCorrect(oldPassword);
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
 
   if (!isPasswordCorrect) {
     throw new ApiError(401, "Invalid old password");
@@ -322,9 +323,9 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 });
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
-  const coverImageLocalpath = req.file?.path;
+  const coverimageLocalpath = req.file?.path;
 
-  if (!coverImageLocalpath) {
+  if (!coverimageLocalpath) {
     throw new ApiError(400, "cover image file is required");
   }
 
@@ -334,16 +335,16 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
-  const coverImage = await uploadOnCloudinary(coverImageLocalpath);
+  const coverimage = await uploadOnCloudinary(coverimageLocalpath);
 
-  if (!coverImage.url) {
+  if (!coverimage.url) {
     throw new ApiError(400, "Error while uploading cover image");
   }
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
-      $set: { coverImage: coverImage.url },
+      $set: { coverimage: coverimage.url },
     },
     {
       new: true,
@@ -360,7 +361,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { user }, "coverimage updated successfully"));
 });
 
-const getChannelUserprofile = asyncHandler(async (req, res) => {
+const getChannelUserProfile = asyncHandler(async (req, res) => {
   const { username } = req.params;
 
   if (!username?.trim()) {
@@ -420,6 +421,8 @@ const getChannelUserprofile = asyncHandler(async (req, res) => {
     },
   ]);
 
+  // console.log(channel);
+
   if (!channel?.length) {
     throw new ApiError(404, "channel does not exist");
   }
@@ -427,10 +430,57 @@ const getChannelUserprofile = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new ApiResponse(200, { channel }, "user channel fetched successfully")
+      new ApiResponse(200, channel[0], "user channel fetched successfully")
     );
 });
 
+const getWatchHistory = asyncHandler(async (req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user?._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    username: 1,
+                    fullName: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user[0].watchHistory || [], "watchHistory fetched successfully"));
+});
 
 export {
   registerUser,
@@ -442,5 +492,6 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
-  getChannelUserprofile
+  getChannelUserProfile,
+  getWatchHistory,
 };

@@ -19,10 +19,12 @@ const deleteFromCloudinary = async (cloudinaryUrl) => {
     const publicId = getPublicIdFromUrl(cloudinaryUrl);
     const response = await cloudinary.uploader.destroy(publicId);
 
+    // console.log(response);
+    
     if (response.result !== "ok") {
       throw new Error("Failed to delete image from Cloudinary");
     }
-
+    
     return response;
   } catch (error) {
     console.error(error.message || "Failed to delete from Cloudinary");
