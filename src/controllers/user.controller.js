@@ -5,7 +5,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import { deleteFromCloudinary } from "../utils/deleteCloudinary.js";
-import { mongoose, Schema } from "mongoose";
+import { mongoose } from "mongoose";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -267,17 +267,18 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { fullName, email } = req.body;
 
-  if (!fullName && !email) {
-    throw new ApiError(400, "At least one field is required to update");
+  if (!fullName || !email) {
+    throw new ApiError(400, "both field is required to update");
   }
-
-  const updateData = {};
-  if (fullName) updateData.fullName = fullName;
-  if (email) updateData.email = email;
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
-    { $set: updateData },
+    {
+      $set: {
+        fullName,
+        email,
+      },
+    },
     { new: true }
   ).select("-password");
 
@@ -479,7 +480,13 @@ const getWatchHistory = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, user[0].watchHistory || [], "watchHistory fetched successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory || [],
+        "watchHistory fetched successfully"
+      )
+    );
 });
 
 export {

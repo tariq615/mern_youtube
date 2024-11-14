@@ -12,8 +12,17 @@ const uploadOnCloudinary = async (localFilePath) => {
   try {
     if (!localFilePath) return null;
 
+      // Extended list of video file extensions
+    const videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'wmv', 'flv', 'webm', 'mpeg', 'mpg', '3gp', 'ogv'];
+    const fileType = localFilePath.match(/\.(\w+)$/)?.[1].toLowerCase();
+
+    // Determine folder based on file type
+    const folder = videoExtensions.includes(fileType) ? 'videos_folder' : 'images_folder';
+
+
     const response = await cloudinary.uploader.upload(localFilePath, {
-      resource_type: "auto"
+      resource_type: "auto",
+      folder: folder
     });
     // console.log("File uploaded on cloudinary", response.url);
     fs.unlinkSync(localFilePath)

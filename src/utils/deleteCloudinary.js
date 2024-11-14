@@ -7,9 +7,19 @@ cloudinary.config({
 });
 
 const getPublicIdFromUrl = (cloudinaryUrl) => {
-  // Assuming the URL has the format: https://res.cloudinary.com/{cloud_name}/image/upload/{public_id}
-  const parts = cloudinaryUrl.split("/");
-  return parts[parts.length - 1].split(".")[0]; // Extracts the public ID without the file extension
+  // Extract everything after "image/upload/" or "video/upload/"
+  const path =
+    cloudinaryUrl.split("/image/upload/")[1] ||
+    cloudinaryUrl.split("/video/upload/")[1];
+  if (!path) throw new Error("Invalid Cloudinary URL format.");
+
+  // Remove version prefix if it exists
+  const parts = path.split("/");
+  if (parts[0].startsWith("v")) {
+    parts.shift(); // Remove the version part
+  }
+
+  return parts.join("/").split(".")[0]; // Keep full path without the file extension
 };
 
 const deleteFromCloudinary = async (cloudinaryUrl) => {
@@ -17,14 +27,13 @@ const deleteFromCloudinary = async (cloudinaryUrl) => {
     if (!cloudinaryUrl) throw new Error("Error: URL not provided");
 
     const publicId = getPublicIdFromUrl(cloudinaryUrl);
+
     const response = await cloudinary.uploader.destroy(publicId);
 
-    // console.log(response);
-    
     if (response.result !== "ok") {
       throw new Error("Failed to delete image from Cloudinary");
     }
-    
+
     return response;
   } catch (error) {
     console.error(error.message || "Failed to delete from Cloudinary");
