@@ -6,20 +6,15 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Extract publicId using regex
 const getPublicIdFromUrl = (cloudinaryUrl) => {
-  // Extract everything after "image/upload/" or "video/upload/"
-  const path =
-    cloudinaryUrl.split("/image/upload/")[1] ||
-    cloudinaryUrl.split("/video/upload/")[1];
-  if (!path) throw new Error("Invalid Cloudinary URL format.");
+  const regex =
+    /\/(?:image|video)\/upload\/(?:v\d+\/)?(.+?)(?:\.[a-zA-Z0-9]+)?$/;
+  const match = cloudinaryUrl.match(regex);
 
-  // Remove version prefix if it exists
-  const parts = path.split("/");
-  if (parts[0].startsWith("v")) {
-    parts.shift(); // Remove the version part
-  }
+  if (!match || !match[1]) throw new Error("Invalid Cloudinary URL format.");
 
-  return parts.join("/").split(".")[0]; // Keep full path without the file extension
+  return match[1]; // Public ID is in the first capture group
 };
 
 const deleteFromCloudinary = async (cloudinaryUrl) => {
@@ -28,10 +23,14 @@ const deleteFromCloudinary = async (cloudinaryUrl) => {
 
     const publicId = getPublicIdFromUrl(cloudinaryUrl);
 
-    const response = await cloudinary.uploader.destroy(publicId);
+    const resourceType = cloudinaryUrl.includes("/video/") ? "video" : "image";
+
+    const response = await cloudinary.uploader.destroy(publicId, {
+      resource_type: resourceType,
+    });
 
     if (response.result !== "ok") {
-      throw new Error("Failed to delete image from Cloudinary");
+      throw new Error("Failed to del from Cloudinary");
     }
 
     return response;

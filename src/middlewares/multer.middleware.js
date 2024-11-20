@@ -1,6 +1,6 @@
 import multer from "multer";
 import { v4 as uuidv4 } from 'uuid';
-import ApiError from './path/to/ApiError';  // Adjust this path based on your setup
+import {ApiError} from '../utils/ApiError.js';  // Adjust this path based on your setup
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -34,4 +34,4 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-export const upload = multer({ storage, fileFilter });
+export const upload = multer({storage, fileFilter});

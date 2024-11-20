@@ -316,7 +316,11 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     }
   ).select("-password -refreshToken");
 
-  await deleteFromCloudinary(userBeforeUpdate.avatar);
+  if(user){
+    await deleteFromCloudinary(userBeforeUpdate.avatar);
+  }else{
+    throw new ApiError(500, "connection error, please try again later")
+  }
 
   return res
     .status(200)
