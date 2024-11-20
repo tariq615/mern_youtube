@@ -299,14 +299,21 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     throw new ApiError(403, "only the user has the rights to update");
   }
 
-  video.isPublished = !video.isPublished;
-  const status = await video.save({ validateBeforeSave: false });
+  const toggledVideoPublish = await Video.findByIdAndUpdate(
+    videoId,
+    {
+        $set: {
+            isPublished: !video?.isPublished
+        }
+    },
+    { new: true }
+);
 
-  if (!status) {
+  if (!toggledVideoPublish) {
     throw new ApiError(500, "failed to update try again later");
   }
 
-  return res.status(200).json(new ApiResponse(200, status, "status updated"));
+  return res.status(200).json(new ApiResponse(200, toggledVideoPublish, "status updated"));
 });
 
 export {
