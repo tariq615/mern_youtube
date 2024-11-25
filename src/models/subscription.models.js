@@ -11,7 +11,7 @@ const subscriptionScehma = new Schema(
       ref: "User",
     },
   },
-  { timeStamps: true }
+  { timestamps: true }
 );
 
 
